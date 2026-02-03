@@ -1,0 +1,28 @@
+graph TD
+    subgraph "Layer 3: Utilities"
+        consumer["pkg/consumer<br/>ConsumerGroup<br/>RetryPolicy<br/>DeadLetterHandler<br/>BatchConsumer<br/>WithRetry"]
+        producer["pkg/producer<br/>AsyncProducer<br/>SyncProducer<br/>Serializer<br/>Compressor"]
+    end
+
+    subgraph "Layer 2: Adapters"
+        kafka["pkg/kafka<br/>Producer<br/>Consumer<br/>Config<br/>PartitionStrategy"]
+        rabbitmq["pkg/rabbitmq<br/>Producer<br/>Consumer<br/>Config<br/>ExchangeType"]
+    end
+
+    subgraph "Layer 1: Core"
+        broker["pkg/broker<br/>MessageBroker (interface)<br/>Subscription (interface)<br/>Handler (type)<br/>Message (struct)<br/>Config (struct)<br/>BrokerError<br/>InMemoryBroker"]
+    end
+
+    consumer -->|"depends on"| broker
+    producer -->|"depends on"| broker
+    kafka -->|"depends on"| broker
+    rabbitmq -->|"depends on"| broker
+
+    consumer -.->|"no dependency"| producer
+    kafka -.->|"no dependency"| rabbitmq
+
+    style broker fill:#2d5a27,stroke:#1a3518,color:#ffffff
+    style kafka fill:#1a4a6e,stroke:#0e2d44,color:#ffffff
+    style rabbitmq fill:#1a4a6e,stroke:#0e2d44,color:#ffffff
+    style consumer fill:#6e4a1a,stroke:#442d0e,color:#ffffff
+    style producer fill:#6e4a1a,stroke:#442d0e,color:#ffffff

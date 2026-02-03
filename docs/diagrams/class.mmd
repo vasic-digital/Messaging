@@ -1,0 +1,252 @@
+classDiagram
+    class MessageBroker {
+        <<interface>>
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +HealthCheck(ctx context.Context) error
+        +IsConnected() bool
+        +Publish(ctx context.Context, topic string, msg *Message) error
+        +Subscribe(ctx context.Context, topic string, handler Handler) (Subscription, error)
+        +Unsubscribe(topic string) error
+        +Type() BrokerType
+    }
+
+    class Subscription {
+        <<interface>>
+        +Unsubscribe() error
+        +IsActive() bool
+        +Topic() string
+        +ID() string
+    }
+
+    class Serializer {
+        <<interface>>
+        +Serialize(v interface~{}~) ([]byte, error)
+        +Deserialize(data []byte, v interface~{}~) error
+        +ContentType() string
+    }
+
+    class Compressor {
+        <<interface>>
+        +Compress(data []byte) ([]byte, error)
+        +Decompress(data []byte) ([]byte, error)
+        +Algorithm() string
+    }
+
+    class Handler {
+        <<type alias>>
+        func(ctx context.Context, msg *Message) error
+    }
+
+    class Message {
+        +ID string
+        +Topic string
+        +Key []byte
+        +Value []byte
+        +Headers map[string]string
+        +Timestamp time.Time
+        +SetHeader(key, value string) *Message
+        +GetHeader(key string) string
+        +WithKey(key []byte) *Message
+        +WithStringKey(key string) *Message
+        +Clone() *Message
+    }
+
+    class BrokerError {
+        +Code ErrorCode
+        +Message string
+        +Cause error
+        +Retryable bool
+        +Error() string
+        +Unwrap() error
+        +Is(target error) bool
+    }
+
+    class MultiError {
+        +Errors []error
+        +Error() string
+        +Add(err error)
+        +HasErrors() bool
+        +ErrorOrNil() error
+        +Unwrap() error
+    }
+
+    class Config {
+        +Brokers []string
+        +ClientID string
+        +Validate() error
+    }
+
+    class InMemoryBroker {
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +HealthCheck(ctx context.Context) error
+        +IsConnected() bool
+        +Publish(ctx context.Context, topic string, msg *Message) error
+        +Subscribe(ctx context.Context, topic string, handler Handler) (Subscription, error)
+        +Unsubscribe(topic string) error
+        +Type() BrokerType
+    }
+
+    class KafkaProducer {
+        +SetPublishFunc(fn func)
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +IsConnected() bool
+        +Publish(ctx context.Context, topic string, msg *Message) error
+        +Config() *kafka.Config
+    }
+
+    class KafkaConsumer {
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +IsConnected() bool
+        +Subscribe(ctx context.Context, topic string, handler Handler) (Subscription, error)
+        +Unsubscribe(topic string) error
+        +Config() *kafka.Config
+    }
+
+    class RabbitProducer {
+        +SetPublishFunc(fn func)
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +IsConnected() bool
+        +Publish(ctx context.Context, topic string, msg *Message) error
+        +Config() *rabbitmq.Config
+    }
+
+    class RabbitConsumer {
+        +Connect(ctx context.Context) error
+        +Close(ctx context.Context) error
+        +IsConnected() bool
+        +Subscribe(ctx context.Context, topic string, handler Handler) (Subscription, error)
+        +Unsubscribe(topic string) error
+        +Config() *rabbitmq.Config
+    }
+
+    class ConsumerGroup {
+        +ID() string
+        +Add(topic string, handler Handler)
+        +Start(ctx context.Context) error
+        +Stop() error
+        +IsRunning() bool
+        +Topics() []string
+    }
+
+    class RetryPolicy {
+        +MaxRetries int
+        +BackoffBase time.Duration
+        +BackoffMax time.Duration
+        +BackoffMultiplier float64
+        +Delay(attempt int) time.Duration
+        +ShouldRetry(attempt int) bool
+    }
+
+    class DeadLetterHandler {
+        +SetOnFailure(fn func)
+        +Handle(ctx context.Context, msg *Message, originalErr error) error
+        +Count() int64
+        +DLQTopic() string
+    }
+
+    class BatchConsumer {
+        +Add(msg *Message)
+        +Flush(ctx context.Context) error
+        +Start(ctx context.Context)
+        +Stop(ctx context.Context) error
+        +BufferLen() int
+        +BatchSize() int
+        +AsHandler() Handler
+    }
+
+    class AsyncProducer {
+        +SetSerializer(s Serializer)
+        +SetCompressor(c Compressor)
+        +Start(ctx context.Context)
+        +Send(topic string, msg *Message) error
+        +Errors() chan error
+        +Stop()
+        +SentCount() int64
+        +FailedCount() int64
+    }
+
+    class SyncProducer {
+        +SetSerializer(s Serializer)
+        +SetCompressor(c Compressor)
+        +Send(ctx context.Context, topic string, msg *Message) error
+        +SendValue(ctx context.Context, topic string, value interface~{}~) error
+        +SentCount() int64
+        +FailedCount() int64
+    }
+
+    class JSONSerializer {
+        +Serialize(v interface~{}~) ([]byte, error)
+        +Deserialize(data []byte, v interface~{}~) error
+        +ContentType() string
+    }
+
+    class ProtobufSerializer {
+        +MarshalFunc func
+        +UnmarshalFunc func
+        +Serialize(v interface~{}~) ([]byte, error)
+        +Deserialize(data []byte, v interface~{}~) error
+        +ContentType() string
+    }
+
+    class AvroSerializer {
+        +MarshalFunc func
+        +UnmarshalFunc func
+        +Serialize(v interface~{}~) ([]byte, error)
+        +Deserialize(data []byte, v interface~{}~) error
+        +ContentType() string
+    }
+
+    class GzipCompressor {
+        +Level int
+        +Compress(data []byte) ([]byte, error)
+        +Decompress(data []byte) ([]byte, error)
+        +Algorithm() string
+    }
+
+    class SnappyCompressor {
+        +CompressFunc func
+        +DecompressFunc func
+        +Compress(data []byte) ([]byte, error)
+        +Decompress(data []byte) ([]byte, error)
+        +Algorithm() string
+    }
+
+    class LZ4Compressor {
+        +CompressFunc func
+        +DecompressFunc func
+        +Compress(data []byte) ([]byte, error)
+        +Decompress(data []byte) ([]byte, error)
+        +Algorithm() string
+    }
+
+    InMemoryBroker ..|> MessageBroker
+    MessageBroker --> Message : publishes/receives
+    MessageBroker --> Handler : invokes
+    MessageBroker --> Subscription : returns
+
+    KafkaProducer --> Message : publishes
+    KafkaConsumer --> Subscription : returns
+    RabbitProducer --> Message : publishes
+    RabbitConsumer --> Subscription : returns
+
+    ConsumerGroup --> MessageBroker : uses
+    DeadLetterHandler --> MessageBroker : publishes to DLQ
+
+    AsyncProducer --> MessageBroker : uses
+    AsyncProducer --> Serializer : uses
+    AsyncProducer --> Compressor : uses
+    SyncProducer --> MessageBroker : uses
+    SyncProducer --> Serializer : uses
+    SyncProducer --> Compressor : uses
+
+    JSONSerializer ..|> Serializer
+    ProtobufSerializer ..|> Serializer
+    AvroSerializer ..|> Serializer
+    GzipCompressor ..|> Compressor
+    SnappyCompressor ..|> Compressor
+    LZ4Compressor ..|> Compressor

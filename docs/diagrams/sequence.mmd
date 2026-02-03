@@ -1,0 +1,80 @@
+sequenceDiagram
+    participant App as Application
+    participant SP as SyncProducer
+    participant B as MessageBroker
+    participant Sub as Subscription
+    participant H as Handler
+    participant WR as WithRetry
+    participant DLH as DeadLetterHandler
+
+    Note over App,DLH: Message Production Flow
+
+    App->>SP: SendValue(ctx, "orders", orderData)
+    SP->>SP: Serialize (JSONSerializer)
+    SP->>SP: Compress (GzipCompressor)
+    SP->>SP: Set content-type header
+    SP->>SP: Set content-encoding header
+    SP->>B: Publish(ctx, "orders", msg)
+    B-->>SP: nil (success)
+    SP->>SP: Increment SentCount
+    SP-->>App: nil
+
+    Note over App,DLH: Message Consumption Flow
+
+    App->>B: Subscribe(ctx, "orders", wrappedHandler)
+    B-->>App: Subscription
+
+    B->>WR: handler(ctx, msg)
+    WR->>H: handler(ctx, msg)
+    H-->>WR: error (transient failure)
+
+    WR->>WR: Check IsRetryableError
+    WR->>WR: Calculate Delay (attempt 1)
+    WR->>WR: Sleep BackoffBase * Multiplier^1
+
+    WR->>H: handler(ctx, msg) [retry 1]
+    H-->>WR: error (still failing)
+
+    WR->>WR: Calculate Delay (attempt 2)
+    WR->>WR: Sleep BackoffBase * Multiplier^2
+
+    WR->>H: handler(ctx, msg) [retry 2]
+    H-->>WR: error (max retries reached)
+    WR-->>B: error (last error)
+
+    Note over App,DLH: Dead Letter Queue Flow
+
+    App->>DLH: Handle(ctx, msg, originalErr)
+    DLH->>DLH: Clone message
+    DLH->>DLH: Set x-dlq-reason header
+    DLH->>DLH: Set x-dlq-original-topic header
+    DLH->>DLH: Set x-dlq-timestamp header
+    DLH->>B: Publish(ctx, "orders.dlq", dlqMsg)
+    B-->>DLH: nil
+    DLH->>DLH: Increment Count
+    DLH->>DLH: Invoke OnFailure callback
+    DLH-->>App: nil
+
+    Note over App,DLH: Async Production Flow
+
+    App->>App: ap := NewAsyncProducer(broker, 5000)
+    App->>App: ap.Start(ctx)
+    App->>App: ap.Send("logs", msg)
+    Note right of App: Non-blocking: queued<br/>in buffered channel
+
+    activate B
+    Note right of B: Background goroutine<br/>pulls from channel
+    B->>B: Publish(ctx, "logs", msg)
+    deactivate B
+
+    Note over App,DLH: Batch Consumption Flow
+
+    App->>App: bc := NewBatchConsumer(50, 2s, batchHandler)
+    App->>App: bc.Start(ctx)
+    B->>App: bc.AsHandler()(ctx, msg1)
+    App->>App: Add to buffer
+    B->>App: bc.AsHandler()(ctx, msg2)
+    App->>App: Add to buffer
+    Note right of App: Timer fires or<br/>buffer reaches 50
+    App->>App: Flush(ctx)
+    App->>App: batchHandler(ctx, [msg1, msg2, ...])
