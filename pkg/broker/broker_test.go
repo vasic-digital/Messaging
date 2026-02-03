@@ -487,6 +487,25 @@ func TestIsRetryableError_NonBrokerError(t *testing.T) {
 	assert.False(t, IsRetryableError(ErrPublishFailed))
 }
 
+func TestMultiError_ErrorOrNil_WithErrors(t *testing.T) {
+	me := NewMultiError(ErrPublishFailed)
+	result := me.ErrorOrNil()
+	assert.NotNil(t, result)
+	assert.Same(t, me, result)
+}
+
+func TestMultiError_Unwrap_WithErrors(t *testing.T) {
+	me := NewMultiError(ErrPublishFailed, ErrConnectionFailed)
+	unwrapped := me.Unwrap()
+	assert.Equal(t, ErrPublishFailed, unwrapped)
+}
+
+func TestMultiError_Unwrap_NoErrors(t *testing.T) {
+	me := NewMultiError()
+	unwrapped := me.Unwrap()
+	assert.Nil(t, unwrapped)
+}
+
 func TestInMemoryBroker_PublishCreatesTopicOnDemand(t *testing.T) {
 	b := NewInMemoryBroker()
 	ctx := context.Background()

@@ -388,3 +388,14 @@ func TestRabbitSubscription_DoubleUnsubscribe(t *testing.T) {
 	require.NoError(t, sub.Unsubscribe())
 	require.NoError(t, sub.Unsubscribe())
 }
+
+func TestConsumer_Connect_AlreadyConnected(t *testing.T) {
+	c := NewConsumer(nil)
+	ctx := context.Background()
+	require.NoError(t, c.Connect(ctx))
+	defer func() { _ = c.Close(ctx) }()
+
+	// Second connect should return early
+	require.NoError(t, c.Connect(ctx))
+	assert.True(t, c.IsConnected())
+}

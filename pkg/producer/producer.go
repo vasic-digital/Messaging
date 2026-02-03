@@ -115,6 +115,9 @@ type Compressor interface {
 // GzipCompressor implements Compressor using gzip.
 type GzipCompressor struct {
 	Level int // gzip.DefaultCompression if zero
+	// writerFactory is optional; if set, used instead of bytes.Buffer.
+	// This is useful for testing error paths.
+	writerFactory func() io.Writer
 }
 
 // Compress compresses data using gzip.
@@ -123,8 +126,14 @@ func (c *GzipCompressor) Compress(data []byte) ([]byte, error) {
 	if level == 0 {
 		level = gzip.DefaultCompression
 	}
+
 	var buf bytes.Buffer
-	w, err := gzip.NewWriterLevel(&buf, level)
+	var target io.Writer = &buf
+	if c.writerFactory != nil {
+		target = c.writerFactory()
+	}
+
+	w, err := gzip.NewWriterLevel(target, level)
 	if err != nil {
 		return nil, fmt.Errorf("gzip writer creation failed: %w", err)
 	}
@@ -133,6 +142,13 @@ func (c *GzipCompressor) Compress(data []byte) ([]byte, error) {
 	}
 	if err := w.Close(); err != nil {
 		return nil, fmt.Errorf("gzip close failed: %w", err)
+	}
+
+	// If using custom writer, we need to return its contents
+	if c.writerFactory != nil {
+		if bw, ok := target.(*bytes.Buffer); ok {
+			return bw.Bytes(), nil
+		}
 	}
 	return buf.Bytes(), nil
 }

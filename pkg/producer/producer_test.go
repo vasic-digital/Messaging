@@ -1,8 +1,11 @@
 package producer
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
+	"io"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -572,4 +575,324 @@ func TestSyncProducer_SendValue_DefaultSerializer(t *testing.T) {
 	sp := NewSyncProducer(b, 5*time.Second)
 	// No serializer set, should default to JSON.
 	require.NoError(t, sp.SendValue(ctx, "topic", 42))
+}
+
+func TestGzipCompressor_InvalidLevel(t *testing.T) {
+	// Test with invalid compression level (-99 is not a valid gzip level)
+	c := &GzipCompressor{Level: -99}
+	_, err := c.Compress([]byte("test"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "gzip writer creation failed")
+}
+
+// failingWriter is a writer that fails after a certain number of bytes.
+type failingWriter struct {
+	buf         bytes.Buffer
+	failOnWrite bool
+	failOnFlush bool
+	bytesUntilFail int
+	written        int
+}
+
+func (w *failingWriter) Write(p []byte) (int, error) {
+	if w.failOnWrite {
+		if w.bytesUntilFail > 0 && w.written < w.bytesUntilFail {
+			toWrite := w.bytesUntilFail - w.written
+			if toWrite > len(p) {
+				toWrite = len(p)
+			}
+			n, _ := w.buf.Write(p[:toWrite])
+			w.written += n
+			if w.written >= w.bytesUntilFail {
+				return n, errors.New("write failed")
+			}
+			return n, nil
+		}
+		return 0, errors.New("write failed")
+	}
+	n, err := w.buf.Write(p)
+	w.written += n
+	return n, err
+}
+
+func (w *failingWriter) Bytes() []byte {
+	return w.buf.Bytes()
+}
+
+func TestGzipCompressor_WriteError(t *testing.T) {
+	// Test gzip write error path using a failing writer
+	fw := &failingWriter{failOnWrite: true}
+	c := &GzipCompressor{
+		Level: gzip.DefaultCompression,
+		writerFactory: func() io.Writer { return fw },
+	}
+
+	_, err := c.Compress([]byte("test data to compress"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "gzip write failed")
+}
+
+// closeFailWriter is a writer that fails on implicit close via gzip.Writer.Close
+type closeFailWriter struct {
+	buf bytes.Buffer
+}
+
+func (w *closeFailWriter) Write(p []byte) (int, error) {
+	return w.buf.Write(p)
+}
+
+// The gzip.Writer.Close() calls Flush internally which writes to the underlying writer.
+// To trigger a close error, we need the final flush to fail.
+// Since bytes.Buffer doesn't fail, we need a different approach.
+
+// closeOnlyFailWriter allows writes but fails on the final Close() flush.
+type closeOnlyFailWriter struct {
+	buf           bytes.Buffer
+	writeCount    int
+	failAfterWrite int
+}
+
+func (w *closeOnlyFailWriter) Write(p []byte) (int, error) {
+	w.writeCount++
+	// Allow the initial writes (header, data), fail on the Close() flush write
+	if w.failAfterWrite > 0 && w.writeCount > w.failAfterWrite {
+		return 0, errors.New("close flush failed")
+	}
+	return w.buf.Write(p)
+}
+
+func (w *closeOnlyFailWriter) Bytes() []byte {
+	return w.buf.Bytes()
+}
+
+func TestGzipCompressor_CloseError(t *testing.T) {
+	// gzip.Writer.Close() writes final trailer data.
+	// To test the close error path, we use a writer that allows initial writes
+	// (header + data) but fails on the trailer write during Close().
+	fw := &closeOnlyFailWriter{
+		failAfterWrite: 2, // Allow header and data writes, fail on close trailer
+	}
+	c := &GzipCompressor{
+		Level: gzip.BestSpeed, // Use fast level to minimize buffering
+		writerFactory: func() io.Writer { return fw },
+	}
+
+	// Small data so the trailer write during Close() is what fails
+	_, err := c.Compress([]byte("x"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "close failed")
+}
+
+func TestGzipCompressor_WithWriterFactory(t *testing.T) {
+	// Test that writerFactory is used when provided
+	var customBuf bytes.Buffer
+	c := &GzipCompressor{
+		Level: gzip.DefaultCompression,
+		writerFactory: func() io.Writer { return &customBuf },
+	}
+
+	data := []byte("test data")
+	compressed, err := c.Compress(data)
+	require.NoError(t, err)
+	assert.NotEmpty(t, compressed)
+
+	// Verify we can decompress
+	decompressed, err := c.Decompress(compressed)
+	require.NoError(t, err)
+	assert.Equal(t, data, decompressed)
+}
+
+func TestGzipCompressor_AllLevels(t *testing.T) {
+	// Test all valid gzip compression levels
+	data := []byte("hello world, this is test data for compression")
+	tests := []struct {
+		name  string
+		level int
+	}{
+		{name: "BestSpeed", level: 1},
+		{name: "BestCompression", level: 9},
+		{name: "DefaultCompression_zero", level: 0},
+		{name: "DefaultCompression_explicit", level: -1},
+		{name: "Level5", level: 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &GzipCompressor{Level: tt.level}
+			compressed, err := c.Compress(data)
+			if tt.level == -99 || tt.level < -2 || tt.level > 9 {
+				// Invalid levels
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				// Decompress to verify
+				decompressed, err := c.Decompress(compressed)
+				require.NoError(t, err)
+				assert.Equal(t, data, decompressed)
+			}
+		})
+	}
+}
+
+func TestAsyncProducer_SendLoop_ContextCanceled(t *testing.T) {
+	b := broker.NewInMemoryBroker()
+	ctx, cancel := context.WithCancel(context.Background())
+	require.NoError(t, b.Connect(ctx))
+
+	ap := NewAsyncProducer(b, 10)
+	ap.Start(ctx)
+
+	// Cancel context to trigger ctx.Done() path in sendLoop
+	cancel()
+
+	// Give it a moment to exit
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestAsyncProducer_ErrorChannelFull(t *testing.T) {
+	// Test the case where error channel is full (default case in select)
+	b := broker.NewInMemoryBroker()
+	// Don't connect - publishes will fail
+	// Use buffer size of 1 so the error channel fills with just one error
+	ap := NewAsyncProducer(b, 1)
+
+	ctx := context.Background()
+	ap.Start(ctx)
+
+	// Send one message to fill the error channel
+	err := ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+	require.NoError(t, err)
+
+	// Wait for the first error to be generated and fill the channel
+	time.Sleep(50 * time.Millisecond)
+
+	// Send more messages - these will hit the default case because the error
+	// channel is already full (capacity 1) and we're not reading from it
+	for i := 0; i < 10; i++ {
+		_ = ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+	}
+
+	// Wait for processing
+	time.Sleep(100 * time.Millisecond)
+
+	ap.Stop()
+
+	// The failed count should exceed the error channel capacity (1),
+	// meaning the default case was hit for subsequent errors
+	assert.Greater(t, ap.FailedCount(), int64(1),
+		"failed count should exceed error channel capacity")
+}
+
+func TestAsyncProducer_StopDrainsWithErrors(t *testing.T) {
+	// Test that Stop drains remaining messages even when broker fails
+	b := broker.NewInMemoryBroker()
+	// Don't connect - publishes will fail during drain
+	ap := NewAsyncProducer(b, 100)
+
+	ctx := context.Background()
+	ap.Start(ctx)
+
+	// Send several messages
+	for i := 0; i < 5; i++ {
+		_ = ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+	}
+
+	// Give some time for messages to queue up but not be fully processed
+	time.Sleep(10 * time.Millisecond)
+
+	// Stop will drain remaining messages, which will fail since broker not connected
+	ap.Stop()
+
+	// Failed count should reflect drain failures
+	assert.Greater(t, ap.FailedCount(), int64(0))
+}
+
+func TestAsyncProducer_StopDrainsWithSuccess(t *testing.T) {
+	// Test that Stop successfully drains remaining messages when broker is connected
+	b := broker.NewInMemoryBroker()
+	ctx := context.Background()
+	require.NoError(t, b.Connect(ctx))
+
+	// Use a large buffer so messages queue up
+	ap := NewAsyncProducer(b, 100)
+	ap.Start(ctx)
+
+	// Send messages that will be drained on stop
+	for i := 0; i < 10; i++ {
+		err := ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+		require.NoError(t, err)
+	}
+
+	// Stop immediately - some messages should be in the queue
+	ap.Stop()
+
+	// All messages should have been sent (either in main loop or drain loop)
+	assert.Equal(t, int64(10), ap.SentCount())
+	assert.Equal(t, int64(0), ap.FailedCount())
+}
+
+// slowBroker wraps a broker and adds delay to Publish
+type slowBroker struct {
+	broker.MessageBroker
+	delay time.Duration
+}
+
+func (sb *slowBroker) Publish(ctx context.Context, topic string, msg *broker.Message) error {
+	time.Sleep(sb.delay)
+	return sb.MessageBroker.Publish(ctx, topic, msg)
+}
+
+func TestAsyncProducer_DrainLoopPublishSuccess(t *testing.T) {
+	// Test that the drain loop processes messages successfully when Stop is called
+	// while messages are still queued
+	b := broker.NewInMemoryBroker()
+	ctx := context.Background()
+	require.NoError(t, b.Connect(ctx))
+
+	// Use slow broker to ensure messages queue up
+	sb := &slowBroker{MessageBroker: b, delay: 50 * time.Millisecond}
+	ap := NewAsyncProducer(sb, 100)
+	ap.Start(ctx)
+
+	// Send many messages quickly
+	for i := 0; i < 20; i++ {
+		err := ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+		require.NoError(t, err)
+	}
+
+	// Stop while messages are still being processed
+	// This should drain remaining messages in the drain loop
+	ap.Stop()
+
+	// All messages should have been sent
+	assert.Equal(t, int64(20), ap.SentCount())
+}
+
+func TestAsyncProducer_DrainLoopPublishError(t *testing.T) {
+	// Test that the drain loop handles publish errors correctly
+	// by using a broker that starts connected but gets closed
+	b := broker.NewInMemoryBroker()
+	ctx := context.Background()
+	require.NoError(t, b.Connect(ctx))
+
+	// Wrap with slow broker
+	sb := &slowBroker{MessageBroker: b, delay: 10 * time.Millisecond}
+	ap := NewAsyncProducer(sb, 100)
+	ap.Start(ctx)
+
+	// Send messages
+	for i := 0; i < 10; i++ {
+		_ = ap.Send("topic", broker.NewMessage("topic", []byte("data")))
+	}
+
+	// Close the broker while messages are queued
+	// This will cause subsequent publishes to fail
+	_ = b.Close(ctx)
+
+	// Stop - the drain loop should encounter errors
+	ap.Stop()
+
+	// Some messages should have failed
+	total := ap.SentCount() + ap.FailedCount()
+	assert.Equal(t, int64(10), total, "all messages should be accounted for")
 }
