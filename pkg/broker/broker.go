@@ -49,13 +49,17 @@ type MessageBroker interface {
 	// IsConnected returns true if connected to the broker.
 	IsConnected() bool
 	// Publish sends a message to a topic or queue.
-	Publish(ctx context.Context, topic string, msg *Message) error
+	Publish(ctx context.Context, topic string, msg *Message, opts ...PublishOption) error
+	// PublishBatch sends multiple messages to a topic or queue.
+	PublishBatch(ctx context.Context, topic string, messages []*Message, opts ...PublishOption) error
 	// Subscribe creates a subscription to a topic or queue.
-	Subscribe(ctx context.Context, topic string, handler Handler) (Subscription, error)
+	Subscribe(ctx context.Context, topic string, handler Handler, opts ...SubscribeOption) (Subscription, error)
 	// Unsubscribe cancels a subscription for a topic.
 	Unsubscribe(topic string) error
 	// Type returns the type of this broker.
 	Type() BrokerType
+	// GetMetrics returns broker metrics.
+	GetMetrics() *BrokerMetrics
 }
 
 // Handler is a function that processes messages.

@@ -15,6 +15,7 @@ type InMemoryBroker struct {
 	mu          sync.RWMutex
 	connected   bool
 	stopCh      chan struct{}
+	metrics     *BrokerMetrics
 }
 
 type subscriberInfo struct {
@@ -29,6 +30,7 @@ func NewInMemoryBroker() *InMemoryBroker {
 		queues:      make(map[string][]*Message),
 		subscribers: make(map[string][]subscriberInfo),
 		stopCh:      make(chan struct{}),
+		metrics:     NewBrokerMetrics(),
 	}
 }
 
@@ -73,7 +75,7 @@ func (b *InMemoryBroker) IsConnected() bool {
 
 // Publish publishes a message to a topic.
 func (b *InMemoryBroker) Publish(
-	ctx context.Context, topic string, msg *Message,
+	ctx context.Context, topic string, msg *Message, opts ...PublishOption,
 ) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -97,9 +99,21 @@ func (b *InMemoryBroker) Publish(
 	return nil
 }
 
+// PublishBatch publishes multiple messages to a topic.
+func (b *InMemoryBroker) PublishBatch(
+	ctx context.Context, topic string, messages []*Message, opts ...PublishOption,
+) error {
+	for _, msg := range messages {
+		if err := b.Publish(ctx, topic, msg, opts...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Subscribe creates a subscription to a topic.
 func (b *InMemoryBroker) Subscribe(
-	_ context.Context, topic string, handler Handler,
+	_ context.Context, topic string, handler Handler, opts ...SubscribeOption,
 ) (Subscription, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -134,6 +148,11 @@ func (b *InMemoryBroker) Unsubscribe(topic string) error {
 // Type returns the broker type.
 func (b *InMemoryBroker) Type() BrokerType {
 	return BrokerTypeInMemory
+}
+
+// GetMetrics returns broker metrics.
+func (b *InMemoryBroker) GetMetrics() *BrokerMetrics {
+	return b.metrics
 }
 
 // inMemorySub is an in-memory subscription.
