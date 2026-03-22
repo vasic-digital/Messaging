@@ -456,12 +456,12 @@ func newMockFailingBroker(failOnCount int) *mockFailingBroker {
 	}
 }
 
-func (m *mockFailingBroker) Subscribe(ctx context.Context, topic string, handler broker.Handler) (broker.Subscription, error) {
+func (m *mockFailingBroker) Subscribe(ctx context.Context, topic string, handler broker.Handler, opts ...broker.SubscribeOption) (broker.Subscription, error) {
 	m.subscribeCount++
 	if m.subscribeCount == m.failOnCount {
 		return nil, errors.New("subscription failed")
 	}
-	return m.InMemoryBroker.Subscribe(ctx, topic, handler)
+	return m.InMemoryBroker.Subscribe(ctx, topic, handler, opts...)
 }
 
 func TestConsumerGroup_Start_CleanupOnPartialFailure(t *testing.T) {

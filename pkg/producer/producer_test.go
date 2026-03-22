@@ -837,9 +837,9 @@ type slowBroker struct {
 	delay time.Duration
 }
 
-func (sb *slowBroker) Publish(ctx context.Context, topic string, msg *broker.Message) error {
+func (sb *slowBroker) Publish(ctx context.Context, topic string, msg *broker.Message, opts ...broker.PublishOption) error {
 	time.Sleep(sb.delay)
-	return sb.MessageBroker.Publish(ctx, topic, msg)
+	return sb.MessageBroker.Publish(ctx, topic, msg, opts...)
 }
 
 func TestAsyncProducer_DrainLoopPublishSuccess(t *testing.T) {
