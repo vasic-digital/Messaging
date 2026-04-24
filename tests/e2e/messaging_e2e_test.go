@@ -16,7 +16,7 @@ import (
 
 func TestFullMessagingPipeline_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -60,7 +60,7 @@ func TestFullMessagingPipeline_E2E(t *testing.T) {
 
 func TestDeadLetterQueue_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -106,7 +106,7 @@ func TestDeadLetterQueue_E2E(t *testing.T) {
 
 func TestBatchConsumer_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	var batches []int
@@ -144,7 +144,7 @@ func TestBatchConsumer_E2E(t *testing.T) {
 
 func TestRetryPolicy_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	policy := consumer.DefaultRetryPolicy()
@@ -162,7 +162,7 @@ func TestRetryPolicy_E2E(t *testing.T) {
 
 func TestMessageCloning_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	original := broker.NewMessageWithKey("topic", []byte("key"), []byte("value"))
@@ -185,7 +185,7 @@ func TestMessageCloning_E2E(t *testing.T) {
 
 func TestBrokerTypes_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	assert.True(t, broker.BrokerTypeKafka.IsValid())
@@ -200,7 +200,7 @@ func TestBrokerTypes_E2E(t *testing.T) {
 
 func TestGzipCompressor_E2E(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	comp := &producer.GzipCompressor{}

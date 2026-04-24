@@ -17,7 +17,7 @@ import (
 
 func TestInMemoryBroker_PublishSubscribe_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -56,7 +56,7 @@ func TestInMemoryBroker_PublishSubscribe_Integration(t *testing.T) {
 
 func TestInMemoryBroker_Unsubscribe_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -92,7 +92,7 @@ func TestInMemoryBroker_Unsubscribe_Integration(t *testing.T) {
 
 func TestConsumerGroup_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -145,7 +145,7 @@ func TestConsumerGroup_Integration(t *testing.T) {
 
 func TestKafkaProducer_ConfigValidation_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := kafka.DefaultConfig()
@@ -160,7 +160,7 @@ func TestKafkaProducer_ConfigValidation_Integration(t *testing.T) {
 
 func TestRabbitMQConfig_ConnectionString_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := rabbitmq.DefaultConfig()
@@ -178,7 +178,7 @@ func TestRabbitMQConfig_ConnectionString_Integration(t *testing.T) {
 
 func TestSyncProducer_WithBroker_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -196,7 +196,7 @@ func TestSyncProducer_WithBroker_Integration(t *testing.T) {
 
 func TestSyncProducer_SendValue_Integration(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()

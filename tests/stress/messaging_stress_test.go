@@ -16,7 +16,7 @@ import (
 
 func TestInMemoryBroker_ConcurrentPublish_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -62,7 +62,7 @@ func TestInMemoryBroker_ConcurrentPublish_Stress(t *testing.T) {
 
 func TestInMemoryBroker_ConcurrentSubscribeUnsubscribe_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -92,7 +92,7 @@ func TestInMemoryBroker_ConcurrentSubscribeUnsubscribe_Stress(t *testing.T) {
 
 func TestAsyncProducer_HighThroughput_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -128,7 +128,7 @@ func TestAsyncProducer_HighThroughput_Stress(t *testing.T) {
 
 func TestConsumerGroup_ConcurrentStartStop_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -160,7 +160,7 @@ func TestConsumerGroup_ConcurrentStartStop_Stress(t *testing.T) {
 
 func TestMessageClone_ConcurrentAccess_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	original := broker.NewMessageWithKey("topic", []byte("key"), []byte("value"))
@@ -195,7 +195,7 @@ func TestMessageClone_ConcurrentAccess_Stress(t *testing.T) {
 
 func TestSyncProducer_ConcurrentSend_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -227,7 +227,7 @@ func TestSyncProducer_ConcurrentSend_Stress(t *testing.T) {
 
 func TestGzipCompressor_ConcurrentCompress_Stress(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in short mode")
+		t.Skip("skipping stress test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	comp := &producer.GzipCompressor{}

@@ -16,7 +16,7 @@ import (
 
 func TestInMemoryBroker_PublishWhenNotConnected_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -28,7 +28,7 @@ func TestInMemoryBroker_PublishWhenNotConnected_Security(t *testing.T) {
 
 func TestInMemoryBroker_SubscribeWhenNotConnected_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -39,7 +39,7 @@ func TestInMemoryBroker_SubscribeWhenNotConnected_Security(t *testing.T) {
 
 func TestInMemoryBroker_HealthCheckWhenNotConnected_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -49,7 +49,7 @@ func TestInMemoryBroker_HealthCheckWhenNotConnected_Security(t *testing.T) {
 
 func TestKafkaConfig_EmptyBrokers_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := &kafka.Config{Brokers: []string{}, ClientID: "test"}
@@ -63,7 +63,7 @@ func TestKafkaConfig_EmptyBrokers_Security(t *testing.T) {
 
 func TestKafkaConfig_SASLWithoutUsername_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := kafka.DefaultConfig()
@@ -75,7 +75,7 @@ func TestKafkaConfig_SASLWithoutUsername_Security(t *testing.T) {
 
 func TestRabbitMQConfig_EmptyHost_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := &rabbitmq.Config{Host: "", Port: 5672, Username: "guest"}
@@ -85,7 +85,7 @@ func TestRabbitMQConfig_EmptyHost_Security(t *testing.T) {
 
 func TestRabbitMQConfig_InvalidPort_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -113,7 +113,7 @@ func TestRabbitMQConfig_InvalidPort_Security(t *testing.T) {
 
 func TestRabbitMQConfig_InvalidExchangeType_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := rabbitmq.DefaultConfig()
@@ -131,7 +131,7 @@ func TestRabbitMQConfig_InvalidExchangeType_Security(t *testing.T) {
 
 func TestBrokerError_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	err := broker.NewBrokerError(
@@ -150,7 +150,7 @@ func TestBrokerError_Security(t *testing.T) {
 
 func TestBrokerConfig_EmptyBrokerAddress_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	cfg := &broker.Config{
@@ -163,7 +163,7 @@ func TestBrokerConfig_EmptyBrokerAddress_Security(t *testing.T) {
 
 func TestAsyncProducer_SendBeforeStart_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -177,7 +177,7 @@ func TestAsyncProducer_SendBeforeStart_Security(t *testing.T) {
 
 func TestConsumerGroup_DoubleStart_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	b := broker.NewInMemoryBroker()
@@ -199,7 +199,7 @@ func TestConsumerGroup_DoubleStart_Security(t *testing.T) {
 
 func TestKafkaProducer_PublishNilMessage_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	p := kafka.NewProducer(kafka.DefaultConfig())
@@ -212,7 +212,7 @@ func TestKafkaProducer_PublishNilMessage_Security(t *testing.T) {
 
 func TestRabbitMQConsumer_SubscribeEmptyTopic_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	c := rabbitmq.NewConsumer(rabbitmq.DefaultConfig())
@@ -226,7 +226,7 @@ func TestRabbitMQConsumer_SubscribeEmptyTopic_Security(t *testing.T) {
 
 func TestRetryPolicy_ZeroValues_Security(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping security test in short mode")
+		t.Skip("skipping security test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	policy := &consumer.RetryPolicy{
