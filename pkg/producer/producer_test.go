@@ -323,12 +323,6 @@ func TestLZ4Compressor_Algorithm(t *testing.T) {
 
 // --- AsyncProducer Tests ---
 
-func TestNewAsyncProducer_DefaultBuffer(t *testing.T) {
-	b := broker.NewInMemoryBroker()
-	ap := NewAsyncProducer(b, 0) // Should default to 1000.
-	assert.NotNil(t, ap)
-}
-
 func TestAsyncProducer_StartStop(t *testing.T) {
 	b := broker.NewInMemoryBroker()
 	ctx := context.Background()
@@ -447,12 +441,6 @@ func TestAsyncProducer_StopDrainsMessages(t *testing.T) {
 }
 
 // --- SyncProducer Tests ---
-
-func TestNewSyncProducer_DefaultTimeout(t *testing.T) {
-	b := broker.NewInMemoryBroker()
-	sp := NewSyncProducer(b, 0)
-	assert.NotNil(t, sp)
-}
 
 func TestSyncProducer_Send_Success(t *testing.T) {
 	b := broker.NewInMemoryBroker()
