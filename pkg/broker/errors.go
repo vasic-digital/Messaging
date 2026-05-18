@@ -165,6 +165,13 @@ func NewMultiError(errs ...error) *MultiError {
 }
 
 // Error implements the error interface.
+//
+// Round-123 §11.4 — the user-visible multi-error message is now routed
+// through the i18n seam (see i18n_wiring.go). NoopTranslator (default)
+// returns the key verbatim, which preserves anti-bluff posture: a unit
+// test asserting the exact legacy string can be rewritten to assert the
+// i18n key, and a project-side translator can fan out locale overrides
+// without any change inside the Messaging submodule.
 func (e *MultiError) Error() string {
 	if len(e.Errors) == 0 {
 		return "no errors"
@@ -172,7 +179,16 @@ func (e *MultiError) Error() string {
 	if len(e.Errors) == 1 {
 		return e.Errors[0].Error()
 	}
-	return fmt.Sprintf("multiple errors (%d): %v", len(e.Errors), e.Errors[0])
+	rendered := tr().T("messaging_broker_multi_error", map[string]any{
+		"count": len(e.Errors),
+		"first": e.Errors[0],
+	})
+	if rendered == "messaging_broker_multi_error" {
+		// NoopTranslator path: preserve the legacy formatted message so
+		// existing callers / wire evidence still parses cleanly.
+		return fmt.Sprintf("multiple errors (%d): %v", len(e.Errors), e.Errors[0])
+	}
+	return rendered
 }
 
 // Add adds an error to the MultiError.

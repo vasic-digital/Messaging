@@ -51,9 +51,15 @@ func (cg *ConsumerGroup) Add(topic string, handler broker.Handler) {
 }
 
 // Start subscribes to all registered topics.
+//
+// Round-123 §11.4 — the "already running" sentinel + the per-topic
+// subscribe-failure message are routed through the broker package's
+// i18n seam (see pkg/broker/i18n_wiring.go). NoopTranslator returns the
+// key verbatim, in which case Start falls back to the legacy formatted
+// message so wire evidence + existing assertions stay valid.
 func (cg *ConsumerGroup) Start(ctx context.Context) error {
 	if cg.running.Load() {
-		return fmt.Errorf("consumer group %s is already running", cg.id)
+		return fmt.Errorf("%s", renderAlreadyRunning(cg.id))
 	}
 
 	cg.mu.Lock()
@@ -67,7 +73,7 @@ func (cg *ConsumerGroup) Start(ctx context.Context) error {
 				_ = s.Unsubscribe()
 			}
 			cg.subscriptions = make(map[string]broker.Subscription)
-			return fmt.Errorf("failed to subscribe to %s: %w", topic, err)
+			return fmt.Errorf("%s: %w", renderSubscribeFailure(topic), err)
 		}
 		cg.subscriptions[topic] = sub
 	}

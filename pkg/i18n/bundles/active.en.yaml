@@ -1,0 +1,20 @@
+# Messaging i18n bundle — English (default).
+#
+# Keys are prefixed `messaging_` to avoid collision with sibling submodule
+# catalogues that a consuming project (e.g. HelixCode) may merge into a
+# single bundle store. Per CONST-046 the consuming project's project-side
+# translator is the authority that fans out locale overrides; this
+# bundle is the canonical English source.
+#
+# Round-123 §11.4 — kickoff scope: broker connection / publish /
+# consumer / config sentinels + multi-error aggregation. Subsequent
+# rounds widen coverage to producer, kafka, and rabbitmq error and
+# log surfaces.
+
+messaging_broker_connection_failed: "connection failed"
+messaging_broker_publish_failed: "publish failed"
+messaging_broker_subscribe_failed: "subscribe failed: {{topic}}: {{error}}"
+messaging_broker_consumer_group_already_running: "consumer group {{id}} is already running"
+messaging_broker_dlq_publish_failed: "failed to publish to DLQ {{topic}}: {{error}}"
+messaging_broker_multi_error: "multiple errors ({{count}}): {{first}}"
+messaging_broker_invalid_config_host_required: "host is required"
