@@ -1,0 +1,50 @@
+{
+  "_comment": "Round-250 bilingual fixtures for Messaging. Used by messaging_describe_challenge.sh + challenges/runner/main.go to verify UTF-8 / non-ASCII payloads round-trip losslessly through every broker Publish/Subscribe path AND survive JSON Marshal/Unmarshal on the Message struct. CONST-046 alignment (no hardcoded English-only assumption).",
+  "inputs": [
+    {
+      "locale": "en",
+      "topic": "events",
+      "key": "user-1",
+      "value": "Hello, world! Messages move across topics.",
+      "headers": {"trace": "round-250-en"}
+    },
+    {
+      "locale": "sr-Latn",
+      "topic": "dogadjaji",
+      "key": "korisnik-2",
+      "value": "Zdravo, svete! Poruke putuju kroz teme.",
+      "headers": {"trace": "round-250-sr-latn"}
+    },
+    {
+      "locale": "sr-Cyrl",
+      "topic": "догађаји",
+      "key": "корисник-3",
+      "value": "Здраво, свете! Поруке путују кроз теме.",
+      "headers": {"trace": "round-250-sr-cyrl"}
+    },
+    {
+      "locale": "ja",
+      "topic": "イベント",
+      "key": "ユーザー-4",
+      "value": "こんにちは、世界！メッセージはトピック間を移動します。",
+      "headers": {"trace": "round-250-ja"}
+    },
+    {
+      "locale": "ar",
+      "topic": "الأحداث",
+      "key": "المستخدم-5",
+      "value": "مرحبا بالعالم! الرسائل تنتقل عبر المواضيع.",
+      "headers": {"trace": "round-250-ar"}
+    }
+  ],
+  "expected_invariants": {
+    "byte_preservation": "Input value bytes MUST round-trip unchanged through Message.Value across Publish->Subscribe in the InMemoryBroker AND through json.Marshal/Unmarshal of the Message struct.",
+    "key_preservation": "Optional key bytes (including non-ASCII) MUST round-trip unchanged.",
+    "headers_preservation": "Headers map MUST round-trip unchanged across Publish/Subscribe.",
+    "topic_preservation": "Topic strings (including non-ASCII Cyrillic/Japanese/Arabic) MUST be deliverable to subscribers.",
+    "ordering": "PublishBatch MUST deliver messages to subscribers in the order published for a single topic.",
+    "consumer_group_dispatch": "ConsumerGroup MUST route each subscribed topic to its registered handler without cross-talk.",
+    "retry_dlq": "RetryPolicy with exhausted budget MUST forward the failing message to the configured DLQ topic with original bytes intact.",
+    "interface_contract": "InMemoryBroker MUST satisfy broker.MessageBroker — verified by compile-time blank assignment."
+  }
+}

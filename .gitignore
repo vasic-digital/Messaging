@@ -1,30 +1,57 @@
+# CONST-053 hardened .gitignore — round-250.
+
 # Binaries
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.a
+*.o
 
-# Test binary
+# Test binary / artefacts
 *.test
+*.prof
+*.pprof
 
-# Output
+# Output / coverage / reports
 *.out
-
-# Coverage
 coverage.html
 coverage.txt
+coverage.out
+htmlcov/
+*.cover
 
-# IDE
-.idea/
-.vscode/
+# Logs (CONST-053 forbidden-class)
+*.log
+
+# Temp files
+*.tmp
 *.swp
 *.swo
 *~
-
-# OS
+*.orig
+*.rej
 .DS_Store
 Thumbs.db
+
+# IDE / editor personal state
+.idea/
+.vscode/
+.history/
+
+# Sensitive (CONST-053 + CONST-042 intersection — .env.example only)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+id_rsa*
+id_ed25519*
+.netrc
+secrets/
+api_keys.sh
 
 # Go workspace
 go.work
@@ -32,3 +59,17 @@ go.work.sum
 
 # Vendor (use go modules)
 vendor/
+
+# Build dirs
+/bin/
+/build/
+/dist/
+/out/
+target/
+
+# Cache
+.cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
